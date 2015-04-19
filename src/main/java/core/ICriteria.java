@@ -1,5 +1,5 @@
 package core;
 
 public interface ICriteria {
-    public Matrix getMatrix();
+    public CriteriaMatrix createMatrix(String className) throws ClassNotFoundException;
 }
