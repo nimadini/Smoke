@@ -4,8 +4,8 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>asm-sample</groupId>
-    <artifactId>parent</artifactId>
+    <groupId>NC</groupId>
+    <artifactId>smoke</artifactId>
     <version>0.1-SNAPSHOT</version>
   </parent>
 
