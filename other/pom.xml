@@ -20,7 +20,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <forkMode>pertest</forkMode>
+          <forkMode>once</forkMode>
           <argLine>-javaagent:${project.parent.basedir}/agent/target/agent-0.1-SNAPSHOT.jar</argLine>
           <workingDirectory>${project.basedir}/target/test-classes</workingDirectory>
         </configuration>

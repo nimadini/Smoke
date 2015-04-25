@@ -17,6 +17,7 @@ public class Profiler {
         }
 
         catch(IOException e) {
+            System.out.println("ERRRR");
             System.exit(1);
         }
     }
