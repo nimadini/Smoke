@@ -22,7 +22,7 @@
         <configuration>
           <forkMode>once</forkMode>
           <argLine>-javaagent:${project.parent.basedir}/agent/target/agent-0.1-SNAPSHOT.jar</argLine>
-          <workingDirectory>${project.basedir}/target/test-classes</workingDirectory>
+          <workingDirectory>${project.basedir}/target</workingDirectory>
         </configuration>
       </plugin>
     </plugins>

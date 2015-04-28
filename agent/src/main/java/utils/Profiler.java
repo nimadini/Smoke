@@ -17,8 +17,7 @@ public class Profiler {
         }
 
         catch(IOException e) {
-            System.out.println("ERRRR");
-            System.exit(1);
+            System.out.println("PROFILER ERROR IN READING INPUT FILE!");
         }
     }
 }
