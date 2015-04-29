@@ -1,5 +1,7 @@
 package agent;
 
+import utils.ShutDownHook;
+
 import java.io.File;
 import java.lang.instrument.Instrumentation;
 
@@ -15,6 +17,9 @@ public class Agent {
                 System.out.println("ERROR IN REMOVING EXISTING FILE!");
             }
         }
+
+        ShutDownHook sdh = new ShutDownHook();
+        sdh.attachShutDownHook();
 
         inst.addTransformer(new JavaAssistTransformer(inst, fileToWrite));
     }

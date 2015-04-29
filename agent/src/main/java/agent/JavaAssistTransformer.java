@@ -1,6 +1,10 @@
 package agent;
 
 import javassist.*;
+import javassist.bytecode.BadBytecode;
+import javassist.bytecode.analysis.ControlFlow;
+import javassist.expr.ExprEditor;
+import javassist.expr.MethodCall;
 import org.apache.log4j.Logger;
 import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
@@ -70,11 +74,11 @@ public class JavaAssistTransformer implements ClassFileTransformer {
         this.classPool = ClassPool.getDefault();
 
         // set the list of class prefixes to skip
-        this.classesToSkip.add( "sun." );
-        this.classesToSkip.add( "com.sun." );
-        this.classesToSkip.add( "org.apache." );
-        this.classesToSkip.add( "javax." );
-        this.classesToSkip.add( "java." );
+        this.classesToSkip.add("sun.");
+        this.classesToSkip.add("com.sun.");
+        this.classesToSkip.add("org.apache.");
+        this.classesToSkip.add("javax.");
+        this.classesToSkip.add("java.");
 
         // set the file path
         this.fileToWrite = fileToWrite;
@@ -106,12 +110,22 @@ public class JavaAssistTransformer implements ClassFileTransformer {
                 //System.out.println("cc.getDeclaredMethods(): " + cc.getDeclaredMethods().length);
 
                 for (CtMethod m : cc.getDeclaredMethods()) {
+                    /*m.instrument(
+                            new ExprEditor() {
+                                public void edit(MethodCall m)
+                                        throws CannotCompileException
+                                {
+                                    System.out.println(m.getClassName() + "." + m.getMethodName() + " " + m.getSignature());
+                                }
+                            });*/
+
                     m.addLocalVariable("elapsedTime", CtClass.longType);
                     m.insertBefore("elapsedTime = System.currentTimeMillis();");
                     m.insertAfter("elapsedTime = System.currentTimeMillis() - elapsedTime;");
 
                     String content = m.getLongName() + ": \" + elapsedTime +  \"";
                     m.insertAfter("{ utils.Profiler.write(\"" + fileToWrite + "\", \"" + content + "\"); }");
+                    m.insertAfter("{ utils.StatementCoverage.getStatementCoverage().addElem(\"" + content + "\"); }");
 
                     //InstructionPrinter.print(m, System.err);
                 }
@@ -132,7 +146,39 @@ public class JavaAssistTransformer implements ClassFileTransformer {
             }
         }
         else if ("other.Stuff".equals(dotEncodedClassName)) {
-            System.out.println("EXEXEXE: " + dotEncodedClassName);
+            try {
+                CtClass cc = classPool.get("other.Stuff");
+                if (cc.isFrozen()) {
+                    return null; // the class cannot be modified anymore
+                }
+                //CtMethod m = cc.getDeclaredMethod("t0");
+                //System.out.println("cc.getDeclaredMethods(): " + cc.getDeclaredMethods().length);
+
+                for (CtMethod m : cc.getDeclaredMethods()) {
+                    ControlFlow cf = new ControlFlow(m);
+                    ControlFlow.Block[] blocks = cf.basicBlocks();
+
+
+
+                    for (int i = 0; i < blocks.length; i++) {
+                        m.addLocalVariable("b" + i, CtClass.booleanType);
+                    }
+
+
+
+
+
+                    //InstructionPrinter.print(m, System.err);
+                }
+
+                byte[] byteCode = cc.toBytecode();
+                cc.detach(); // TODO: should be moved outside when you changed this stupid if else structure
+                logger.info("successful instrumentation of class: " + className);
+                return byteCode;
+            }
+            catch(IOException | NotFoundException | CannotCompileException | BadBytecode e) {
+                System.out.println("Whooops!");
+            }
         }
 
         return null;
