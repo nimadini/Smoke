@@ -1,15 +1,14 @@
 package utils;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class StatementCoverage {
     private static StatementCoverage sc = new StatementCoverage();
+    private Set<TestCase> allTestCases;
 
     private StatementCoverage() {
-        tcToBlkSet = new HashMap<TestCase, Set<Block>>();
+        tcToMethods = new HashMap<TestCase, Set<Method>>();
+        allTestCases = new HashSet<TestCase>();
     }
 
     public static StatementCoverage getStatementCoverage() {
@@ -18,7 +17,7 @@ public class StatementCoverage {
 
     private final Set<String> elems = new HashSet<String>();
 
-    private Map<TestCase, Set<Block>> tcToBlkSet;
+    private Map<TestCase, Set<Method>> tcToMethods;
 
     public void addElem(String elem) {
         elems.add(elem);
@@ -28,13 +27,36 @@ public class StatementCoverage {
         return elems;
     }
 
+    public Set<TestCase> getAllTestCases() { return allTestCases; }
+
     public void addTestCase(String completeName) {
-        if (tcToBlkSet.containsKey(new TestCase(completeName))) {
+        /*if (tcToBlkSet.containsKey(new TestCase(completeName))) {
             throw new RuntimeException(); // TODO
         }
 
         else {
             tcToBlkSet.put(new TestCase(completeName), new HashSet<Block>());
+        }*/
+        allTestCases.add(new TestCase(completeName));
+    }
+
+    public boolean isTestCase(String name) {
+        return allTestCases.contains(new TestCase(name));
+    }
+
+    public void print() {
+        System.out.println("Starting to Print:");
+        for (TestCase tc : allTestCases) {
+            System.out.println(tc);
         }
+    }
+
+    public TestCase getTestCaseByName(String name) {
+        for (TestCase tc : allTestCases) {
+            if (tc.equals(new TestCase(name))) {
+                return tc;
+            }
+        }
+        return null;
     }
 }

@@ -6,9 +6,10 @@ public class ShutDownHook {
             @Override
             public void run() {
                 System.out.println("Inside Add Shutdown Hook");
-                for (String elem : StatementCoverage.getStatementCoverage().getElems()) {
-                    System.out.println("ELEM: " + elem);
-                }
+                /*for (TestCase t : StatementCoverage.getStatementCoverage().getAllTestCases()) {
+                    System.out.println("Test Case: " + t.getLongName() + ":: " + t.getExecutionTime());
+                }*/
+                StatementCoverage.getStatementCoverage().print();
             }
         });
         System.out.println("Shut Down Hook Attached.");

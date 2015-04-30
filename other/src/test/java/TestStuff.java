@@ -13,4 +13,11 @@ public class TestStuff {
         Stuff stuff = new Stuff();
         stuff.run2(4);
     }
+
+    @Test
+    public void t3() {
+        Stuff stuff = new Stuff();
+        stuff.run(4);
+        stuff.run2(4);
+    }
 }
