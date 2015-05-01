@@ -1,10 +1,8 @@
 package utils;
 
 import org.apache.commons.math3.linear.*;
-
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Set;
 
 /**
  * In this Util class we implement a TestSuiteCutter which works like
@@ -28,7 +26,7 @@ import java.util.List;
 public class TestSuiteCutter {
     static HashSet<Integer> jset;
     public static int UNINITIALIZED = -99;
-    public static List<Integer> findCoverWithGreedy(Array2DRowRealMatrix matrix){
+    public static Set<Integer> findCoverWithGreedy(Array2DRowRealMatrix matrix){
         /*
          *  Input Matrix:
          *   Column: Block identifiers;
@@ -37,13 +35,13 @@ public class TestSuiteCutter {
           * */
         /* Step 0: Set J' to empty */
         if(null == jset){
-            HashSet<Integer> jset = new HashSet<Integer>();
+            jset = new HashSet<Integer>();
         }else{
             jset.clear();
         }
         /* Step 1: If requirementVector is fulfilled then stop. Otherwise find a set covers Pk and maximizing the ratio Pj/cj */
         RealVector reqVector = maxCoverage(matrix);
-        RealVector realVector_copy = reqVector.copy();
+//        RealVector realVector_copy = reqVector.copy();
 
 
         while(containsNonZeroElement(reqVector)){
@@ -73,11 +71,14 @@ public class TestSuiteCutter {
             if (UNINITIALIZED == bestCoverageCase){
                 System.out.println("ERROR: unable to initialize a best coverage case.");
             }else {
-//                coverAndReduceTheRequirementVector();
+                /* add the case to the solution set */
+                jset.add(bestCoverageCase);
+                /* cut the covered blocks from the requirement vector */
+                reqVector = coverAndReduceTheRequirementVector(matrix.getRowVector(bestCoverageCase), reqVector);
             }
         }
 
-        return null;
+        return jset;
     }
 
     public static RealVector maxCoverage(Array2DRowRealMatrix matrix){
@@ -97,8 +98,7 @@ public class TestSuiteCutter {
 //        System.out.println("\n Step 4; transpose the resVector\n" + resVector + "\n");
         /* Step 5: standardize to 1 by walkInOptimizedOrder and return the [1xj] matrix as vector*/
         resVector.walkInOptimizedOrder(new StandardizeVisitor());
-        RealVector res = resVector.getColumnVector(0);
-        return res;
+        return resVector.getColumnVector(0);
     }
 
     /**

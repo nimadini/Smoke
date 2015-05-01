@@ -27,6 +27,9 @@ class TSCutterTest{
         System.out.println("Product of v1 and v3 is " + TestSuiteCutter.coverage(v1,v3));
 
         /* test coverAndReduceTheRequirementVector*/
-        System.out.println("coverAndReduceTheRequirementVector(v1, v2) = " + TestSuiteCutter.coverAndReduceTheRequirementVector(v1,v2));
+        System.out.println("coverAndReduceTheRequirementVector(v1, v2) = " + TestSuiteCutter.coverAndReduceTheRequirementVector(v1, v2));
+
+        /* test the greedy cutter method */
+        System.out.println("\n Now testing the greedy cutter: \n " + TestSuiteCutter.findCoverWithGreedy(simpleMatrix));
     }
 }
