@@ -40,7 +40,7 @@ public final class TestCase {
 
     @Override
     public String toString() {
-        String res = "Test method name: " + longName + "\n";
+        String res = "Test method name: " + longName + "| Time: " + executionTime + "\n";
         for (Method m : methodToBlocksCovered.keySet()) {
             res = res + m.getMethodName() + " | " + m.getTotalBlocks() + "\n";
         }

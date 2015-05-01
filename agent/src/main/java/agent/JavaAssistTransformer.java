@@ -7,7 +7,6 @@ import javassist.expr.ExprEditor;
 import javassist.expr.MethodCall;
 import org.apache.log4j.Logger;
 import utils.StatementCoverage;
-
 import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
@@ -104,35 +103,36 @@ public class JavaAssistTransformer implements ClassFileTransformer {
                 return null; // the class cannot be modified anymore
             }
 
+            // for each method declared in the class itself -> not the inherited methods
+            // inherited methods would be instrumented in separately in their corresponding class
             for (CtMethod m : cc.getDeclaredMethods()) {
-                if (m.getAnnotation(org.junit.Test.class) != null) { // if dealing with a test method
+                if (m.getAnnotation(org.junit.Test.class) != null) { // if m is a test method
+                    // add m to the list of test cases
                     StatementCoverage.getStatementCoverage().addTestCase(m.getLongName());
-                    //System.out.println("TC::" + m.getLongName());
 
-                    m.instrument(
-                        new ExprEditor() {
-                            public void edit(MethodCall m) throws CannotCompileException {
-                                System.out.println(m.getClassName() + "." + m.getMethodName() + " " + m.getSignature());
-                            }
-                        });
-
+                    System.out.println("#" + m.getLongName());
+                    // instrument the test method to find its execution time
+                    m.addLocalVariable("start", CtClass.longType);
+                    m.addLocalVariable("end", CtClass.longType);
                     m.addLocalVariable("elapsedTime", CtClass.longType);
-                    m.insertBefore("elapsedTime = System.currentTimeMillis();");
-                    m.insertAfter("elapsedTime = System.currentTimeMillis() - elapsedTime;");
+                    m.insertBefore("start = System.currentTimeMillis();");
 
-                    // TODO: checking for null point exception
-                    m.insertAfter("{ utils.StatementCoverage.getStatementCoverage().getTestCaseByName(\"" + m.getLongName() + "\").setExecutionTime(elapsedTime); }");
-                    //m.insertAfter("{ utils.StatementCoverage.getStatementCoverage().addElem(\"" + content + "\"); }");
+                    m.insertAfter("end = System.currentTimeMillis();");
+                    m.insertAfter("elapsedTime = end - start;");
+
+                    m.insertAfter("System.out.println(elapsedTime);");
+                    // store the execution time of test case in the data structure we have
+                    m.insertAfter("utils.StatementCoverage.getStatementCoverage().getTestCaseByName(\"" + m.getLongName() + "\").setExecutionTime(elapsedTime);");
                 }
-                else { // if dealing with an actual method
+                else { // if m is an actual method
                     // TODO: assume that you have name of the methods that are being called in the whole test suite
                     // TODO: if current method exists in that set, then:
-                    //m.insertBefore("if (utils.StatementCoverage.getStatementCoverage().containsTestCase(new Exception().getStackTrace()[1].getClassName() + \".\" + new Exception().getStackTrace()[1].getMethodName() + \"()\")) {" +
-                    //                "");
+
                     ControlFlow cf = new ControlFlow(m);
                     ControlFlow.Block[] blocks = cf.basicBlocks();
 
                     // if the caller is one of our test cases, add this method name to the map<testcase, methods>
+                    // the goal is to keep track of which methods are being called in each testcase
                     String code = "" +
                             "java.lang.String callerName = new Exception().getStackTrace()[1].getClassName() + \".\" + new Exception().getStackTrace()[1].getMethodName() + \"()\";" +
                             "if (utils.StatementCoverage.getStatementCoverage().isTestCase(callerName)) {" +
@@ -140,31 +140,22 @@ public class JavaAssistTransformer implements ClassFileTransformer {
                             "}" +
                             "else {" +
                             "   utils.StatementCoverage.getStatementCoverage().print();" +
-                            "   System.out.println(\"#C: \" + callerName);" +
+                            //"   System.out.println(\"#C: \" + callerName);" +
                             "}";
 
 
-                    System.out.println("CODE:\n" + code);
                     m.insertBefore(code);
-
-
 
                     // add inst to beginning of each basic block
                     // for each test case find the blocks that are being executed!
 
-                    m.addLocalVariable("myVar", CtClass.intType);
-                    m.insertBefore("myVar = 5;");
 
-                    m.insertBefore("System.out.println(\"" + m.getLongName() + " called from: \" + new Exception().getStackTrace()[1].getClassName() + \".\" + new Exception().getStackTrace()[1].getMethodName() + \"()\");");
 
-                    System.out.println("AC::" + m.getLongName());
-                    // actual code
+
+                    //System.out.println("AC::" + m.getLongName());
                 }
                 //InstructionPrinter.print(m, System.err);
             }
-
-//                        ControlFlow cf = new ControlFlow(m);
-//                        ControlFlow.Block[] blocks = cf.basicBlocks();
 
             byte[] byteCode = cc.toBytecode();
             cc.detach(); // TODO: should be moved outside when you changed this stupid if else structure
@@ -179,42 +170,6 @@ public class JavaAssistTransformer implements ClassFileTransformer {
             System.out.println("XEEEEEEEE2");
             logger.error("Unexpected error occurred: " + e.getMessage(), e);
         }
-        //}
-        /*else if ("other.Stuff".equals(dotEncodedClassName)) {
-            try {
-                CtClass cc = classPool.get("other.Stuff");
-                if (cc.isFrozen()) {
-                    return null; // the class cannot be modified anymore
-                }
-                //CtMethod m = cc.getDeclaredMethod("t0");
-                //System.out.println("cc.getDeclaredMethods(): " + cc.getDeclaredMethods().length);
-
-                for (CtMethod m : cc.getDeclaredMethods()) {
-                    ControlFlow cf = new ControlFlow(m);
-                    ControlFlow.Block[] blocks = cf.basicBlocks();
-
-
-
-                    for (int i = 0; i < blocks.length; i++) {
-                        m.addLocalVariable("b" + i, CtClass.booleanType);
-                    }
-
-
-
-
-
-                    //InstructionPrinter.print(m, System.err);
-                }
-
-                byte[] byteCode = cc.toBytecode();
-                cc.detach(); // TODO: should be moved outside when you changed this stupid if else structure
-                logger.info("successful instrumentation of class: " + className);
-                return byteCode;
-            }
-            catch(IOException | NotFoundException | CannotCompileException | BadBytecode e) {
-                System.out.println("Whooops!");
-            }
-        }*/
 
         return null;
     }

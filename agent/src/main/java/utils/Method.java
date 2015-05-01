@@ -1,10 +1,8 @@
 package utils;
 
-import java.util.Set;
-
 public final class Method {
     private String methodName;
-    private int totalBlocks;
+    private int totalBlocks; // total number of basic blocks (from 0 to totalBlocks-1)
 
     public String getMethodName() {
         return methodName;
