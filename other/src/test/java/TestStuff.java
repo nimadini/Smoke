@@ -22,4 +22,10 @@ public class TestStuff {
         Stuff stuff = new Stuff();
         stuff.run2();
     }
+
+    @Test
+    public void t3() {
+        Stuff stuff = new Stuff();
+        stuff.run3();
+    }
 }

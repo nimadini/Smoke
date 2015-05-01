@@ -24,4 +24,9 @@ public class Stuff {
         }
         Arrays.sort(elems);
     }
+
+    public void run3() {
+        run(5);
+        run2();
+    }
 }
