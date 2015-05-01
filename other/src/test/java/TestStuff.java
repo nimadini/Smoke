@@ -5,12 +5,21 @@ public class TestStuff {
     @Test
     public void t0() {
         Stuff stuff = new Stuff();
-        stuff.run2(5);
+        stuff.run(5);
+        stuff.run2();
+        stuff.run2();
+        stuff.run2();
     }
 
     @Test
     public void t1() {
         Stuff stuff = new Stuff();
-        stuff.run2(4);
+        stuff.run2();
+    }
+
+    @Test
+    public void t2() {
+        Stuff stuff = new Stuff();
+        stuff.run2();
     }
 }
