@@ -110,17 +110,12 @@ public class JavaAssistTransformer implements ClassFileTransformer {
                     // add m to the list of test cases
                     StatementCoverage.getStatementCoverage().addTestCase(m.getLongName());
 
-                    System.out.println("#" + m.getLongName());
                     // instrument the test method to find its execution time
-                    m.addLocalVariable("start", CtClass.longType);
-                    m.addLocalVariable("end", CtClass.longType);
                     m.addLocalVariable("elapsedTime", CtClass.longType);
-                    m.insertBefore("start = System.currentTimeMillis();");
+                    m.insertBefore("elapsedTime = System.currentTimeMillis();");
 
-                    m.insertAfter("end = System.currentTimeMillis();");
-                    m.insertAfter("elapsedTime = end - start;");
+                    m.insertAfter("elapsedTime = System.currentTimeMillis() - elapsedTime;");
 
-                    m.insertAfter("System.out.println(elapsedTime);");
                     // store the execution time of test case in the data structure we have
                     m.insertAfter("utils.StatementCoverage.getStatementCoverage().getTestCaseByName(\"" + m.getLongName() + "\").setExecutionTime(elapsedTime);");
                 }
