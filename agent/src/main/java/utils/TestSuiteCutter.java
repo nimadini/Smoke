@@ -17,6 +17,11 @@ import java.util.*;
  * (*) Chvatal, Vasek. "A greedy heuristic for the set-covering problem."
  * Mathematics of operations research 4.3 (1979): 233-235.
  *
+ * The HGS approximation algorithm is based on:
+ * (*) Harrold, M. Jean, Rajiv Gupta, and Mary Lou Soffa. "A methodology
+ * for controlling the size of a test suite." ACM Transactions on Software
+ * Engineering and Methodology (TOSEM) 2.3 (1993): 270-285.
+ *
  * APIs:
  * public static Set<Integer> findCoverWithGreedy(Array2DRowRealMatrix matrix);
  * public static Set<Integer> findCoverWithHGS(Array2DRowRealMatrix matrix);
@@ -420,6 +425,7 @@ public class TestSuiteCutter {
      * Return whether the two sets have intersection
      */
     public static boolean hasIntersection(Set<Integer> set1, Set<Integer> set2){
+        if (set1==null||set2==null) return false;
         for (int i : set1){
 //            System.out.println("   _"+set2.contains(i));
             if (set2.contains(i))
