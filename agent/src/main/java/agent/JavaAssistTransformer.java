@@ -1,10 +1,10 @@
 package agent;
 
 import javassist.*;
-import javassist.bytecode.BadBytecode;
+import javassist.bytecode.CodeIterator;
 import javassist.bytecode.analysis.ControlFlow;
-import javassist.expr.ExprEditor;
-import javassist.expr.MethodCall;
+import javassist.compiler.CompileError;
+import javassist.compiler.Javac;
 import org.apache.log4j.Logger;
 import utils.StatementCoverage;
 import java.io.IOException;
@@ -81,6 +81,11 @@ public class JavaAssistTransformer implements ClassFileTransformer {
         this.classesToSkip.add("utils.");
     }
 
+    private byte[] compile(String srcCode, Javac javac) throws CompileError {
+        javac.compileStmnt(srcCode);
+        return javac.getBytecode().get();
+    }
+
     @Override
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
         /*
@@ -102,6 +107,7 @@ public class JavaAssistTransformer implements ClassFileTransformer {
             if (cc.isFrozen()) {
                 return null; // the class cannot be modified anymore
             }
+            Javac javac = new Javac(cc);
 
             // for each method declared in the class itself -> not the inherited methods
             // inherited methods would be instrumented in separately in their corresponding class
@@ -123,11 +129,10 @@ public class JavaAssistTransformer implements ClassFileTransformer {
                     // TODO: assume that you have name of the methods that are being called in the whole test suite
                     // TODO: if current method exists in that set, then:
 
-                    ControlFlow cf = new ControlFlow(m);
-                    ControlFlow.Block[] blocks = cf.basicBlocks();
-
                     // if the caller is one of our test cases, add this method name to the map<testcase, methods>
                     // the goal is to keep track of which methods are being called in each testcase
+                    // TODO: do it recursively (not only direct calls, but indirect calls) -> idea is to use better thant [1]
+                    ControlFlow.Block[] blocks = new ControlFlow(m).basicBlocks();
                     String code = "" +
                             "java.lang.String callerName = new Exception().getStackTrace()[1].getClassName() + \".\" + new Exception().getStackTrace()[1].getMethodName() + \"()\";" +
                             "if (utils.StatementCoverage.getStatementCoverage().isTestCase(callerName)) {" +
@@ -138,8 +143,19 @@ public class JavaAssistTransformer implements ClassFileTransformer {
                             //"   System.out.println(\"#C: \" + callerName);" +
                             "}";
 
-
                     m.insertBefore(code);
+
+
+
+                    int blockSize = new ControlFlow(m).basicBlocks().length;
+
+                    for (int i = 0; i < blockSize; i++) {
+                        //System.out.println("block " + i + "out of: " + blockSize);
+                        ControlFlow.Block blk = new ControlFlow(m).basicBlocks()[i];
+                        CodeIterator itr = m.getMethodInfo().getCodeAttribute().iterator();
+                        int pos = blk.position();
+                        int n = itr.insertAt(pos, compile("utils.StatementCoverage.getStatementCoverage().something();", javac));
+                    }
 
                     // add inst to beginning of each basic block
                     // for each test case find the blocks that are being executed!
@@ -157,7 +173,7 @@ public class JavaAssistTransformer implements ClassFileTransformer {
             logger.info("successful instrumentation of class: " + className);
             return byteCode;
         }
-        catch(IOException | NotFoundException | CannotCompileException e) {
+        catch(IOException | NotFoundException | CannotCompileException | CompileError e) {
             System.out.println("XEEEEEEEE");
             logger.error(e.getMessage() + "\ntransforming class: " + className + "; returning un-instrumented class", e);
         }

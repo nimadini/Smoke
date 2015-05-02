@@ -51,6 +51,10 @@ public class StatementCoverage {
         }
     }
 
+    public void something() {
+
+    }
+
     public TestCase getTestCaseByName(String name) {
         for (TestCase tc : allTestCases) {
             if (tc.equals(new TestCase(name))) {
