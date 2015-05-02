@@ -31,5 +31,6 @@ class TSCutterTest{
 
         /* test the greedy cutter method */
         System.out.println("\n Now testing the greedy cutter: \n " + TestSuiteCutter.findCoverWithGreedy(simpleMatrix));
+        System.out.println(TestSuiteCutter.findCoverWithGreedy(simpleMatrix2));
     }
 }
