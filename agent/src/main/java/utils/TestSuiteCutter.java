@@ -90,20 +90,18 @@ public class TestSuiteCutter {
      * Returns the maximum coverage of a given matrix
      * */
     public static RealVector maxCoverage(Array2DRowRealMatrix matrix){
-        System.out.println("Step 0: input matrix\n " + matrix);
+//        System.out.println("Step 0: input matrix\n " + matrix);
         /* Step 1: create a [jx1] vector */
         Array2DRowRealMatrix covVector = new Array2DRowRealMatrix( matrix.getRowDimension(), 1);
         covVector = (Array2DRowRealMatrix)covVector.scalarAdd(1);
-        System.out.println("\n Step 1: create a [jx1] vector\n " + covVector);
+//        System.out.println("\n Step 1: create a [jx1] vector\n " + covVector);
         /* Step 2: get the transposed matrix */
         Array2DRowRealMatrix tranMatrix = (Array2DRowRealMatrix)matrix.transpose();
-        System.out.println("\n Step 2: get the transposed matrix \n" + tranMatrix);
+//        System.out.println("\n Step 2: get the transposed matrix \n" + tranMatrix);
         /* Step 3: multiply the [ixj] matrix with the [jx1] vector */
         Array2DRowRealMatrix resVector = tranMatrix.multiply(covVector);
-                System.out.println("\n Step 3: multiply the [ixj] matrix with the [jx1] \n" + resVector);
+//                System.out.println("\n Step 3: multiply the [ixj] matrix with the [jx1] \n" + resVector);
         /* Step 4(obsolete); transpose the resVector and Return the [1xi] matrix as vector*/
-//        resVector = (Array2DRowRealMatrix) resVector.transpose();
-//        System.out.println("\n Step 4; transpose the resVector\n" + resVector + "\n");
         /* Step 5: standardize to 1 by walkInOptimizedOrder and return the [1xj] matrix as vector*/
         resVector.walkInOptimizedOrder(new StandardizeVisitor());
         return resVector.getColumnVector(0);
@@ -215,6 +213,7 @@ public class TestSuiteCutter {
             markedSet.clear();
         }
         int MAX_CARD=getMaxCardinality(matrix);
+        System.out.println("Maximum Cardinality :" + MAX_CARD);
         int CURRENT_CARD = 1;
         /* Step 1: find all test cases which has its covered requirement' cardinality as 1 */
         for(int i=0; i<matrix.getColumnDimension();i++){
@@ -222,14 +221,20 @@ public class TestSuiteCutter {
                 repSet.addAll(getTCListfromColumn(matrix,i));
             }
         }
+        System.out.println("Step 1: find all test cases which has its covered requirement' cardinality as 1\n repSet=" + repSet);
 
         /* Mark all Ti containing elements in RS */
         for(int i=0; i<matrix.getColumnDimension();i++){
-            if (!hasIntersection(getTCListfromColumn(matrix,i), repSet))
+//            System.out.println("hasIntersection: " + getTCListfromColumn(matrix, i) + ", repset: " + repSet + " ->" + hasIntersection(getTCListfromColumn(matrix, i), repSet));
+            if (hasIntersection(getTCListfromColumn(matrix,i), repSet)){
                 markedSet.add(i);
+//                System.out.println("  column" + i +" added to the marked set.");
+            }
+
         }
 
-        System.out.println("Step 1: find all test cases which has its covered requirement' cardinality as 1\n repSet=" + repSet);
+        int round=1;
+
         /* Step 2:  */
         Set<Integer> listTC = new HashSet<>();
         while(CURRENT_CARD<=MAX_CARD){
@@ -238,15 +243,19 @@ public class TestSuiteCutter {
             for(int i=0; i<matrix.getColumnDimension();i++){
                 listTC.clear();
                 if (!markedSet.contains(i) && (CURRENT_CARD == getCardinality(matrix,i))){
-                    listTC.addAll(getTCListfromColumn(matrix,i));
+                    listTC.addAll(getTCListfromColumn(matrix, i));
+//                    System.out.printf("add column " + i + " in current cardinality: "+ CURRENT_CARD);
                     existForCard = true;
+                    break;
                 }
             }
+            System.out.println("   round" + (round++) + ", marked set:" + markedSet);
             if (true == existForCard){
-                int next_test = SelectTest(CURRENT_CARD, listTC, matrix, MAX_CARD);
+                int next_test = selectTest(CURRENT_CARD, listTC, matrix, MAX_CARD);
 
                 /* add this selected test into representative set */
                 repSet.add(next_test);
+                System.out.println("add test"+ next_test + " to the repSet.");
 
                 boolean may_reduce = false;
 
@@ -277,10 +286,10 @@ public class TestSuiteCutter {
     }
 
     /**
-     * SelectTest function for HGS.
+     * selectTest function for HGS.
      * It's used to select the next test case to be included in the RepSet.
      * */
-    private static int SelectTest(int current_card, Set<Integer> listTC,Array2DRowRealMatrix matrix,int max_card) {
+    private static int selectTest(int current_card, Set<Integer> listTC,Array2DRowRealMatrix matrix,int max_card) {
         Map<Integer,Integer> counts = new HashMap<Integer, Integer>();
         /* keep track of the test that has the most */
         int maxCoverageCnt = UNINITIALIZED;
@@ -291,7 +300,9 @@ public class TestSuiteCutter {
             int tcCoverageCnt = 0;
 
             for (int colNum=0; colNum<matrix.getColumnDimension();colNum++){
+//                System.out.printf("  SelectTest: current column: "+ matrix.getColumnVector(colNum));
                 if (!markedSet.contains(colNum) && (0!=matrix.getEntry(tcNum,colNum))){
+//                    System.out.println("found in select test.");
                     /* increment the count in map*/
                     if(counts.get(tcNum) == null) {
                         tcCoverageCnt = 1;
@@ -309,7 +320,7 @@ public class TestSuiteCutter {
         }
 
         /* Construct TESTLIST consisting of tests from listTC for which COUNT[l] is the maximum */
-        SortedSet<Integer> testList = new TreeSet<Integer>();
+        TreeSet<Integer> testList = new TreeSet<Integer>();
 
         for(int key : counts.keySet()) {
             if(counts.get(key) == maxCoverageCnt) {
@@ -323,9 +334,10 @@ public class TestSuiteCutter {
         }else if(current_card == max_card){
             /* Here should return 'any' testcase */
             /* Can be changed to return random testcase */
+//            System.out.println(testList);
             return testList.first();
         }else{
-            return (SelectTest(current_card+1, testList, matrix, max_card));
+            return (selectTest(current_card + 1, testList, matrix, max_card));
         }
 
     }
@@ -403,7 +415,8 @@ public class TestSuiteCutter {
      * Return whether the two sets have intersection
      */
     public static boolean hasIntersection(Set<Integer> set1, Set<Integer> set2){
-        for (double i : set1){
+        for (int i : set1){
+//            System.out.println("   _"+set2.contains(i));
             if (set2.contains(i))
                 return true;
         }

@@ -1,5 +1,7 @@
 package test;
 
+import com.javafx.tools.doclets.formats.html.SourceToHTMLConverter;
+import junit.framework.Test;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import utils.TestSuiteCutter;
@@ -32,5 +34,9 @@ class TSCutterTest{
         /* test the greedy cutter method */
         System.out.println("\n Now testing the greedy cutter: \n " + TestSuiteCutter.findCoverWithGreedy(simpleMatrix));
         System.out.println(TestSuiteCutter.findCoverWithGreedy(simpleMatrix2));
+
+        /* test the HGS cutter method*/
+        System.out.println("----------------------------------\n Now testing the HGS cutter:\n ");
+        System.out.println(TestSuiteCutter.findCoverWithHGS(simpleMatrix));
     }
 }
