@@ -5,7 +5,7 @@ public class TestStuff {
     @Test
     public void t0() {
         Stuff stuff = new Stuff();
-        stuff.run(5);
+        stuff.run(-1);
         stuff.run2();
     }
 
