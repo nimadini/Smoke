@@ -27,6 +27,10 @@ public final class TestCase {
         return null;
     }
 
+    public void setLongName(String name) {
+        longName = name;
+    }
+
     public String getLongName() {
         return longName;
     }
@@ -38,6 +42,40 @@ public final class TestCase {
         }
     }
 
+    public void addMethod(Method m) {
+        if (!methodToBlocksCovered.containsKey(m)) {
+            methodToBlocksCovered.put(m, new HashSet<Integer>());
+        }
+    }
+
+    public Set<Integer> getCoveredBlocksByMethod(Method m) {
+        if (!methodToBlocksCovered.containsKey(m))
+            return null;
+
+        return methodToBlocksCovered.get(m);
+    }
+
+    public Set<Integer> getCoveredBlocksByMethodName(String name) {
+        if (name == null)
+            return null;
+
+        Method m = new Method(name);
+
+        if (!methodToBlocksCovered.containsKey(m))
+            return null;
+
+        return methodToBlocksCovered.get(m);
+    }
+
+    public boolean isBlockCoveredInMethod(Method m, int blkIdx) {
+        Set<Integer> blocksCovered = getCoveredBlocksByMethod(m);
+        if (blocksCovered == null) {
+            return false;
+        }
+
+        return blocksCovered.contains(blkIdx);
+    }
+
     public boolean addCoveredBlock(Method m, int blkIdx) {
         if (!methodToBlocksCovered.containsKey(m))
             return false;
@@ -45,6 +83,14 @@ public final class TestCase {
         Set<Integer> method = methodToBlocksCovered.get(m);
         method.add(blkIdx);
         return true;
+    }
+
+    public Set<Method> getCoveredMethods() {
+        Set<Method> methods = new HashSet<Method>();
+        for (Method m : methodToBlocksCovered.keySet()) {
+            methods.add(m);
+        }
+        return methods;
     }
 
     @Override

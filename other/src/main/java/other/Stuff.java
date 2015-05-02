@@ -22,7 +22,7 @@ public class Stuff {
     }
 
     public void run2() {
-        int length = 10000000;
+        int length = 100000000;
         int[] elems = new int[length];
         for (int i = 0; i < length; i++) {
             elems[i] = length - i;

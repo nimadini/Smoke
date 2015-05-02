@@ -196,19 +196,14 @@ public class JavaAssistTransformer implements ClassFileTransformer {
         // if the caller is one of our test cases, add this method name to the map<testcase, methods>
         // the goal is to keep track of which methods are being called in each testcase
         ControlFlow.Block[] blocks = new ControlFlow(m).basicBlocks();
+        int blockSize = blocks.length;
         String code = "" +
                 "String callerTestCaseName = utils.Utility.getTestCaseCaller(new Exception());\n" +
                 "if (callerTestCaseName != null) {\n" +
-                "   utils.StatementCoverage.getStatementCoverage().getTestCaseByName(callerTestCaseName)" +
-                ".addMethod(\"" + m.getLongName() + "\", " + blocks.length + ");\n" +
-                "}\n" +
-                "else {\n" +
-                "   utils.StatementCoverage.getStatementCoverage().print();\n" +
+                "   utils.StatementCoverage.getStatementCoverage().setCurrentBlockMetaInfo(callerTestCaseName, \"" + m.getLongName() + "\"," + blockSize + ");\n" +
                 "}\n";
 
         m.insertBefore(code);
-
-        int blockSize = blocks.length;
 
         // add inst to beginning of each basic block
         // for each test case find the blocks that are being executed!
@@ -217,7 +212,7 @@ public class JavaAssistTransformer implements ClassFileTransformer {
             //System.out.println("block " + i + "out of: " + blockSize);
             ControlFlow.Block blk = new ControlFlow(m).basicBlocks()[i];
             int pos = blk.position();
-            m.insertAt(m.getMethodInfo().getLineNumber(pos), "utils.StatementCoverage.getStatementCoverage().addBlockToCoveredSet(utils.Utility.getTestCaseCaller(new Exception())," + "\"" + m.getLongName() + "\"," + i + ");");
+            m.insertAt(m.getMethodInfo().getLineNumber(pos), "utils.StatementCoverage.getStatementCoverage().addCurrentBlockMetaInfo(" + i + ");");
         }
     }
 
