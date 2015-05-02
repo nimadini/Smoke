@@ -17,6 +17,11 @@ import java.util.*;
  * (*) Chvatal, Vasek. "A greedy heuristic for the set-covering problem."
  * Mathematics of operations research 4.3 (1979): 233-235.
  *
+ * APIs:
+ * public static Set<Integer> findCoverWithGreedy(Array2DRowRealMatrix matrix);
+ * public static Set<Integer> findCoverWithHGS(Array2DRowRealMatrix matrix);
+ *
+ *
  * <p/>
  * (In general, the problem of selecting a minimal cardinality subset
  * of T that covers all the requirements covered by T is NP complete.)
