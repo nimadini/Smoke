@@ -1,8 +1,8 @@
 package utils;
 
 import org.apache.commons.math3.linear.*;
-import java.util.HashSet;
-import java.util.Set;
+
+import java.util.*;
 
 /**
  * In this Util class we implement a TestSuiteCutter which works like
@@ -24,8 +24,9 @@ import java.util.Set;
  * Created by ChenguangLiu on 4/27/15.
  */
 public class TestSuiteCutter {
-    static HashSet<Integer> jset;
+    static HashSet<Integer> repSet;
     public static int UNINITIALIZED = -99;
+    static HashSet<Integer> markedSet;     //only in HGS
     public static Set<Integer> findCoverWithGreedy(Array2DRowRealMatrix matrix){
         /*
          *  Input Matrix:
@@ -33,34 +34,36 @@ public class TestSuiteCutter {
           *  Row:   Test case identifiers;
           *  Element: 1 for cover; 0 for no cover; (set to integer to get extensibility for cost)
           * */
-        /* Step 0: Set J' to empty */
-        if(null == jset){
-            jset = new HashSet<Integer>();
+        /* Step 0: Set repSet to empty */
+        if(null == repSet){
+            repSet = new HashSet<Integer>();
         }else{
-            jset.clear();
+            repSet.clear();
         }
         /* Step 1: If requirementVector is fulfilled then stop. Otherwise find a set covers Pk and maximizing the ratio Pj/cj */
         RealVector reqVector = maxCoverage(matrix);
-//        RealVector realVector_copy = reqVector.copy();
-
 
         while(containsNonZeroElement(reqVector)){
             int bestCoverageCase = UNINITIALIZED;
             int bestCoverageCount = 0;
             for(int testCaseNum=0; testCaseNum<matrix.getRowDimension(); testCaseNum++){
-                if (jset.contains(testCaseNum)){
+                if (repSet.contains(testCaseNum)){
                     /* Omit the case already in the solution set */
                     continue;
                 }else{
                     if(UNINITIALIZED == bestCoverageCase){
                         /* initialize the bestCoverageCase if it hasn't been initialized yet */
-                        bestCoverageCase = testCaseNum;
-                        bestCoverageCount = (int)coverage(matrix.getRowVector(testCaseNum),reqVector);
+                        int thisCovCount = (int)coverage(matrix.getRowVector(testCaseNum),reqVector);
+                        if (0 != thisCovCount){
+                            bestCoverageCase = testCaseNum;
+                            bestCoverageCount = thisCovCount;
+                        }
+
                     }
                 }
                 /* Find the best coverage */
                 int thisCaseCoverageCount = (int)coverage(matrix.getRowVector(testCaseNum),reqVector);
-                if (thisCaseCoverageCount >= bestCoverageCount){
+                if (thisCaseCoverageCount > bestCoverageCount){
                     /* if the current case is no worse than the previous bestCoverageCase,
                     * then set the bestCoverageCase to current case and assign the bestCoverageCount
                     * */
@@ -72,34 +75,38 @@ public class TestSuiteCutter {
                 System.out.println("ERROR: unable to initialize a best coverage case.");
             }else {
                 /* add the case to the solution set */
-                jset.add(bestCoverageCase);
+                repSet.add(bestCoverageCase);
                 /* cut the covered blocks from the requirement vector */
                 reqVector = coverAndReduceTheRequirementVector(matrix.getRowVector(bestCoverageCase), reqVector);
             }
         }
 
-        return jset;
+        return repSet;
     }
 
+
+
+    /**
+     * Returns the maximum coverage of a given matrix
+     * */
     public static RealVector maxCoverage(Array2DRowRealMatrix matrix){
-        System.out.println("Step 0: input matrix\n " + matrix);
+//        System.out.println("Step 0: input matrix\n " + matrix);
         /* Step 1: create a [jx1] vector */
         Array2DRowRealMatrix covVector = new Array2DRowRealMatrix( matrix.getRowDimension(), 1);
         covVector = (Array2DRowRealMatrix)covVector.scalarAdd(1);
-        System.out.println("\n Step 1: create a [jx1] vector\n " + covVector);
+//        System.out.println("\n Step 1: create a [jx1] vector\n " + covVector);
         /* Step 2: get the transposed matrix */
         Array2DRowRealMatrix tranMatrix = (Array2DRowRealMatrix)matrix.transpose();
-        System.out.println("\n Step 2: get the transposed matrix \n" + tranMatrix);
+//        System.out.println("\n Step 2: get the transposed matrix \n" + tranMatrix);
         /* Step 3: multiply the [ixj] matrix with the [jx1] vector */
         Array2DRowRealMatrix resVector = tranMatrix.multiply(covVector);
-                System.out.println("\n Step 3: multiply the [ixj] matrix with the [jx1] \n" + resVector);
+//                System.out.println("\n Step 3: multiply the [ixj] matrix with the [jx1] \n" + resVector);
         /* Step 4(obsolete); transpose the resVector and Return the [1xi] matrix as vector*/
-//        resVector = (Array2DRowRealMatrix) resVector.transpose();
-//        System.out.println("\n Step 4; transpose the resVector\n" + resVector + "\n");
         /* Step 5: standardize to 1 by walkInOptimizedOrder and return the [1xj] matrix as vector*/
         resVector.walkInOptimizedOrder(new StandardizeVisitor());
         return resVector.getColumnVector(0);
     }
+
 
     /**
      * Test if the vector contains non-zero value(s).
@@ -187,6 +194,233 @@ public class TestSuiteCutter {
         public double end() {
             return 0;
         }
+    }
+
+    /**
+     * Implementation of HGS starts here.
+     * O(nt*MAX_CARD) -> O(n(n+nt)MAX_CARD)
+     * */
+    public static Set<Integer> findCoverWithHGS(Array2DRowRealMatrix matrix){
+        /* Step 0: Set repSet to empty */
+        if(null == repSet){
+            repSet = new HashSet<Integer>();
+        }else{
+            repSet.clear();
+        }
+        if(null == markedSet){
+            markedSet = new HashSet<Integer>();
+        }else{
+            markedSet.clear();
+        }
+        int MAX_CARD=getMaxCardinality(matrix);
+        System.out.println("Maximum Cardinality :" + MAX_CARD);
+        int CURRENT_CARD = 1;
+        /* Step 1: find all test cases which has its covered requirement' cardinality as 1 */
+        for(int i=0; i<matrix.getColumnDimension();i++){
+            if (1 == getCardinality(matrix,i)){
+                repSet.addAll(getTCListfromColumn(matrix,i));
+            }
+        }
+        System.out.println("Step 1: find all test cases which has its covered requirement' cardinality as 1\n repSet=" + repSet);
+
+        /* Mark all Ti containing elements in RS */
+        for(int i=0; i<matrix.getColumnDimension();i++){
+//            System.out.println("hasIntersection: " + getTCListfromColumn(matrix, i) + ", repset: " + repSet + " ->" + hasIntersection(getTCListfromColumn(matrix, i), repSet));
+            if (hasIntersection(getTCListfromColumn(matrix,i), repSet)){
+                markedSet.add(i);
+//                System.out.println("  column" + i +" added to the marked set.");
+            }
+
+        }
+
+        int round=1;
+
+        /* Step 2:  */
+        Set<Integer> listTC = new HashSet<>();
+        while(CURRENT_CARD<=MAX_CARD){
+            CURRENT_CARD++; /* Increment the current card */
+            boolean existForCard = false;
+            for(int i=0; i<matrix.getColumnDimension();i++){
+                listTC.clear();
+                if (!markedSet.contains(i) && (CURRENT_CARD == getCardinality(matrix,i))){
+                    listTC.addAll(getTCListfromColumn(matrix, i));
+//                    System.out.printf("add column " + i + " in current cardinality: "+ CURRENT_CARD);
+                    existForCard = true;
+                    break;
+                }
+            }
+            System.out.println("   round" + (round++) + ", marked set:" + markedSet);
+            if (true == existForCard){
+                int next_test = selectTest(CURRENT_CARD, listTC, matrix, MAX_CARD);
+
+                /* add this selected test into representative set */
+                repSet.add(next_test);
+                System.out.println("add test"+ next_test + " to the repSet.");
+
+                boolean may_reduce = false;
+
+                /* mark Ti containing next_test*/
+                for(int i=0; i<matrix.getColumnDimension();i++){
+                    if (getTCListfromColumn(matrix,i).contains(next_test)){
+                        markedSet.add(i);
+                        if (MAX_CARD == getCardinality(matrix,i)) may_reduce = true;
+                    }
+                }
+
+                /* try to reduce max_card */
+                if(true == may_reduce){
+                    int max = UNINITIALIZED;
+                    for(int i=0; i<matrix.getColumnDimension();i++){
+                        if (!markedSet.contains(i)){
+                            int card = getCardinality(matrix, i);
+                            if (card > max) max = card;
+                        }
+                    }
+                    MAX_CARD = max;
+                }
+
+
+            }
+        }
+        return repSet;
+    }
+
+    /**
+     * selectTest function for HGS.
+     * It's used to select the next test case to be included in the RepSet.
+     * */
+    private static int selectTest(int current_card, Set<Integer> listTC,Array2DRowRealMatrix matrix,int max_card) {
+        Map<Integer,Integer> counts = new HashMap<Integer, Integer>();
+        /* keep track of the test that has the most */
+        int maxCoverageCnt = UNINITIALIZED;
+
+        /* foreach tc in LIST do compute COUNT[tc], the number of unmarked Tj’s of cardinality SIZE containing tc */
+        for(Integer tcNum : listTC) {
+
+            int tcCoverageCnt = 0;
+
+            for (int colNum=0; colNum<matrix.getColumnDimension();colNum++){
+//                System.out.printf("  SelectTest: current column: "+ matrix.getColumnVector(colNum));
+                if (!markedSet.contains(colNum) && (0!=matrix.getEntry(tcNum,colNum))){
+//                    System.out.println("found in select test.");
+                    /* increment the count in map*/
+                    if(counts.get(tcNum) == null) {
+                        tcCoverageCnt = 1;
+                    }
+                    else {
+                        tcCoverageCnt = counts.get(tcNum) + 1;
+                    }
+
+                    counts.put(tcNum, tcCoverageCnt);
+
+                    if(tcCoverageCnt > maxCoverageCnt)
+                        maxCoverageCnt = tcCoverageCnt;
+                }
+            }
+        }
+
+        /* Construct TESTLIST consisting of tests from listTC for which COUNT[l] is the maximum */
+        TreeSet<Integer> testList = new TreeSet<Integer>();
+
+        for(int key : counts.keySet()) {
+            if(counts.get(key) == maxCoverageCnt) {
+                testList.add(key);
+            }
+        }
+
+        /* Recursive Logic */
+        if (1 == testList.size()){
+            return testList.first();
+        }else if(current_card == max_card){
+            /* Here should return 'any' testcase */
+            /* Can be changed to return random testcase */
+//            System.out.println(testList);
+            return testList.first();
+        }else{
+            return (selectTest(current_card + 1, testList, matrix, max_card));
+        }
+
+    }
+
+    /**
+     * Get the greatest Cardinality in the Matrix
+     * */
+    public static int getMaxCardinality(Array2DRowRealMatrix matrix){
+        int maxCard = UNINITIALIZED;
+        if (null == matrix){
+            System.out.println("\ngetMaxCardinality(): Matrix is null!\n");
+            return 0;
+        }
+        for(int i=0; i<matrix.getColumnDimension();i++){
+            double[] columnList = matrix.getColumn(i);
+            int sum =0;
+            for(double c: columnList)
+                sum+=c;
+            if (sum>maxCard)
+                maxCard =sum;
+        }
+
+        return maxCard;
+    }
+
+    /**
+     * Get the cardinality of a column */
+    public static int getCardinality(Array2DRowRealMatrix matrix, int columnNum){
+        if (columnNum>=matrix.getColumnDimension()) {
+            System.out.println("\ngetCardinality: ERROR - columnNum>=matrix.getColumnDimension()\n");
+            return UNINITIALIZED;
+        }else{
+            double[] columnList = matrix.getColumn(columnNum);
+            int sum =0;
+            for(double c: columnList)
+                sum+=c;
+            return sum;
+        }
+    }
+
+    /**
+     * Get a list of test cases which belongs to Ti
+     * */
+    public static Set<Integer> getTCListfromColumn(Array2DRowRealMatrix matrix, int ti){
+        if (ti>=matrix.getColumnDimension()) {
+            System.out.println("\ngetTCListfromColumn: ERROR - columnNum>=matrix.getColumnDimension()\n");
+            return null;
+        }else{
+            double[] columnList = matrix.getColumn(ti);
+            Set<Integer> TCList = new HashSet<>();
+            for (int i=0;i<columnList.length;i++){
+                if (0 != columnList[i]){
+                    TCList.add(i);
+                }
+            }
+            if (0!=TCList.size())
+            return TCList;
+            else
+                return null;
+        }
+    }
+
+    /**
+     * Return whether the two sets have intersection
+     */
+    public static boolean hasIntersection(double[] set1, Set<Integer> set2){
+        for (double i : set1){
+            if (set2.contains((int)i))
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Return whether the two sets have intersection
+     */
+    public static boolean hasIntersection(Set<Integer> set1, Set<Integer> set2){
+        for (int i : set1){
+//            System.out.println("   _"+set2.contains(i));
+            if (set2.contains(i))
+                return true;
+        }
+        return false;
     }
 
 
