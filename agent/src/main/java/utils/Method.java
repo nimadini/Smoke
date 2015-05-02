@@ -12,6 +12,10 @@ public final class Method {
         return totalBlocks;
     }
 
+    public Method(String name) {
+        this.methodName = name;
+    }
+
     public Method(String name, int totalBlocks) {
         this.methodName = name;
         this.totalBlocks = totalBlocks;
