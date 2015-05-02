@@ -1,7 +1,5 @@
 package test;
 
-import com.javafx.tools.doclets.formats.html.SourceToHTMLConverter;
-import junit.framework.Test;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import utils.TestSuiteCutter;

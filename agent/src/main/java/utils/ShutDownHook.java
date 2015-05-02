@@ -10,7 +10,7 @@ public class ShutDownHook {
                     System.out.println("Test Case: " + t.getLongName() + ":: " + t.getExecutionTime());
                 }*/
                 StatementCoverage.getStatementCoverage().print();
-                StatementCoverage.getStatementCoverage().genMatrix();
+                System.out.println(TestSuiteCutter.findCoverWithGreedy(StatementCoverage.getStatementCoverage().genMatrix()));
             }
         });
         System.out.println("Shut Down Hook Attached.");
