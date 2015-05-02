@@ -38,11 +38,20 @@ public final class TestCase {
         }
     }
 
+    public boolean addCoveredBlock(Method m, int blkIdx) {
+        if (!methodToBlocksCovered.containsKey(m))
+            return false;
+
+        Set<Integer> method = methodToBlocksCovered.get(m);
+        method.add(blkIdx);
+        return true;
+    }
+
     @Override
     public String toString() {
         String res = "Test method name: " + longName + "| Time: " + executionTime + "\n";
         for (Method m : methodToBlocksCovered.keySet()) {
-            res = res + m.getMethodName() + " | " + m.getTotalBlocks() + "\n";
+            res = res + m.getMethodName() + " | total blocks: " + m.getTotalBlocks() + " | covered: " + methodToBlocksCovered.get(m) + "\n";
         }
         return res;
     }
