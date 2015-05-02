@@ -79,101 +79,7 @@ public class JavaAssistTransformer implements ClassFileTransformer {
         this.classesToSkip.add("javax.");
         this.classesToSkip.add("java.");
         this.classesToSkip.add("utils.");
-    }
-
-
-    public int insertAt(CtClass cc, CtMethod m, String src, int index, Javac jv)
-            throws CannotCompileException {
-        CodeAttribute ca = m.getMethodInfo2().getCodeAttribute();
-        if (ca == null)
-            throw new CannotCompileException("no method body");
-
-        LineNumberAttribute ainfo
-                = (LineNumberAttribute)ca.getAttribute(LineNumberAttribute.tag);
-        if (ainfo == null)
-            throw new CannotCompileException("no line number info");
-
-        //cc.checkModify();
-        CodeIterator iterator = ca.iterator();
-        try {
-            //jv.recordLocalVariables(ca, index);
-            jv.recordParams(m.getParameterTypes(),
-                    Modifier.isStatic(m.getModifiers()));
-            jv.setMaxLocals(ca.getMaxLocals());
-            jv.compileStmnt(src);
-            Bytecode b = jv.getBytecode();
-            int locals = b.getMaxLocals();
-            int stack = b.getMaxStack();
-            ca.setMaxLocals(locals);
-
-            /* We assume that there is no values in the operand stack
-             * at the position where the bytecode is inserted.
-             */
-            if (stack > ca.getMaxStack())
-                ca.setMaxStack(stack);
-
-            index = iterator.insertAt(index, b.get());
-            iterator.insert(b.getExceptionTable(), index);
-            m.getMethodInfo2().rebuildStackMapIf6(cc.getClassPool(), cc.getClassFile2());
-            return index;
-        }
-        catch (NotFoundException e) {
-            throw new CannotCompileException(e);
-        }
-        catch (CompileError e) {
-            throw new CannotCompileException(e);
-        }
-        catch (BadBytecode e) {
-            throw new CannotCompileException(e);
-        }
-    }
-
-    private byte[] compile2(String srcCode, Javac javac) throws CompileError {
-        javac.compileStmnt(srcCode);
-        return javac.getBytecode().get();
-    }
-
-    private byte[] compile(CtClass cc, CtMethod m, String srcCode, Javac javac) throws CompileError, CannotCompileException {
-        //CodeAttribute ca = m.getMethodInfo().getCodeAttribute();
-        //javac.recordLocalVariables(ca, 0);
-
-        CodeAttribute ca = m.getMethodInfo().getCodeAttribute();
-        if (ca == null)
-            throw new CannotCompileException("no method body");
-
-        CodeIterator iterator = ca.iterator();
-        try {
-            int nvars = javac.recordParams(m.getParameterTypes(),
-                    Modifier.isStatic(cc.getModifiers()));
-            javac.recordParamNames(ca, nvars);
-            javac.recordLocalVariables(ca, 0);
-            javac.recordType(Descriptor.getReturnType(m.getMethodInfo2().getDescriptor(),
-                    cc.getClassPool()));
-            javac.compileStmnt(srcCode);
-            Bytecode b = javac.getBytecode();
-            int stack = b.getMaxStack();
-            int locals = b.getMaxLocals();
-
-            if (stack > ca.getMaxStack())
-                ca.setMaxStack(stack);
-
-            if (locals > ca.getMaxLocals())
-                ca.setMaxLocals(locals);
-
-            int pos = iterator.insertEx(b.get());
-            iterator.insert(b.getExceptionTable(), pos);
-            m.getMethodInfo2().rebuildStackMapIf6(cc.getClassPool(), cc.getClassFile2());
-            return b.get();
-        } catch (BadBytecode badBytecode) {
-            badBytecode.printStackTrace();
-        } catch (NotFoundException e) {
-            e.printStackTrace();
-        }
-
-        return null;
-
-        //javac.compileStmnt(srcCode);
-       // return javac.getBytecode().get();
+        this.classesToSkip.add("jxl.");
     }
 
     private void testMethodInstrumentation(CtMethod m) throws CannotCompileException {
@@ -209,9 +115,8 @@ public class JavaAssistTransformer implements ClassFileTransformer {
         // for each test case find the blocks that are being executed!
 
         for (int i = 0; i < blockSize; i++) {
-            //System.out.println("block " + i + "out of: " + blockSize);
             ControlFlow.Block blk = new ControlFlow(m).basicBlocks()[i];
-            int pos = blk.position();
+            int pos = blk.position(); // bytecode line number
             m.insertAt(m.getMethodInfo().getLineNumber(pos), "utils.StatementCoverage.getStatementCoverage().addCurrentBlockMetaInfo(" + i + ");");
         }
     }
@@ -251,8 +156,7 @@ public class JavaAssistTransformer implements ClassFileTransformer {
             }
 
             byte[] byteCode = cc.toBytecode();
-            cc.detach(); // TODO: should be moved outside when you changed this stupid if else structure
-            logger.info("successful instrumentation of class: " + className);
+            cc.detach();
             return byteCode;
         }
         catch(IOException | NotFoundException | CannotCompileException | CompileError e) {

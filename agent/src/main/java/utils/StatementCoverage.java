@@ -21,13 +21,11 @@ public class StatementCoverage {
     public static int counter = 0;
 
     public boolean addBlockToCoveredSet(String testCaseLongName, String methodLongName, int blockIdx) {
-        //System.out.println("#######" + testCaseLongName + " " + methodLongName + " " + blockIdx);
         TestCase tc = getTestCaseByName(testCaseLongName);
         if (tc == null)
             return false;
 
         return tc.addCoveredBlock(new Method(methodLongName), blockIdx);
-        //return true;
     }
 
     public void addTestCase(String completeName) {
@@ -86,7 +84,7 @@ public class StatementCoverage {
         return null;
     }
 
-    public Array2DRowRealMatrix genMatrix() {
+    public Analysis genMatrix() {
         int colDim = 0;
         Map<Method, Integer> methodToBlockOffset = new HashMap<Method, Integer>();
 
@@ -96,7 +94,6 @@ public class StatementCoverage {
         }
 
         Array2DRowRealMatrix mat = new Array2DRowRealMatrix(testCases.size(), colDim);
-        //TestCase[] testCasesArray = testCases.toArray();
         TestCase[] testCasesArray = new TestCase[testCases.size()];
 
         int l = 0;
@@ -117,7 +114,13 @@ public class StatementCoverage {
         }
 
         matrixPrettyPrint(mat, testCasesArray, methodToBlockOffset);
-        return mat;
+        return new Analysis(testCasesArray, mat);
+    }
+
+    public Analysis analyze() {
+        Analysis ar = genMatrix();
+        ar.setResult(TestSuiteCutter.findCoverWithHGS(ar.getMatrix()));
+        return ar;
     }
 
     public void matrixPrettyPrint(Array2DRowRealMatrix mat, TestCase[] testCases, Map<Method, Integer> methodToBlockOffset) {

@@ -5,14 +5,20 @@ public class ShutDownHook {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                System.out.println("Inside Add Shutdown Hook");
-                /*for (TestCase t : StatementCoverage.getStatementCoverage().getAllTestCases()) {
-                    System.out.println("Test Case: " + t.getLongName() + ":: " + t.getExecutionTime());
-                }*/
+                System.out.println("-------------------- Smoke Analysis Started --------------------");
+
                 StatementCoverage.getStatementCoverage().print();
-                System.out.println("The representative test set is: " +TestSuiteCutter.findCoverWithHGS(StatementCoverage.getStatementCoverage().genMatrix()));
+
+                ReportGenerator repGen = new ReportGenerator(StatementCoverage.getStatementCoverage().analyze());
+                repGen.setOutputFile("/Users/stanley/Desktop/tmp/report.xls");
+                try {
+                    repGen.write();
+                    System.out.println("Please check the result file under /Users/stanley/Desktop/tmp/report.xls");
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         });
-        System.out.println("Shut Down Hook Attached.");
     }
 }
