@@ -407,16 +407,6 @@ public class TestSuiteCutter {
         }
     }
 
-    /**
-     * Return whether the two sets have intersection
-     */
-    public static boolean hasIntersection(double[] set1, Set<Integer> set2){
-        for (double i : set1){
-            if (set2.contains((int)i))
-                return true;
-        }
-        return false;
-    }
 
     /**
      * Return whether the two sets have intersection
@@ -424,7 +414,6 @@ public class TestSuiteCutter {
     public static boolean hasIntersection(Set<Integer> set1, Set<Integer> set2){
         if (set1==null||set2==null) return false;
         for (int i : set1){
-//            System.out.println("   _"+set2.contains(i));
             if (set2.contains(i))
                 return true;
         }
