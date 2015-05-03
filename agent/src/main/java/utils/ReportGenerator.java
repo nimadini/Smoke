@@ -13,24 +13,30 @@ import jxl.write.WritableFont;
 import jxl.write.WritableSheet;
 import jxl.write.WritableWorkbook;
 import jxl.write.WriteException;
-import jxl.write.biff.RowsExceededException;
+
+/**
+ * Produces the analysis report in .xls format (MS Excel)
+ *
+ * Created by Nima Dini | April 2015
+ * Adapted from Vogella's tutorial: http://www.vogella.com/tutorials/JavaExcel/article.html
+ */
 
 public class ReportGenerator {
     private WritableCellFormat timesBoldUnderline;
     private WritableCellFormat times;
-    private String inputFile;
     private Analysis analysis;
+    private String outputFile;
 
-    public ReportGenerator(Analysis analysis) {
+    public void setAnalysis(Analysis analysis) {
         this.analysis = analysis;
     }
 
-    public void setOutputFile(String inputFile) {
-        this.inputFile = inputFile;
+    public String getOutputFilePath() {
+        return this.outputFile;
     }
 
     public void write() throws IOException, WriteException {
-        File file = new File(inputFile);
+        File file = new File(outputFile);
         WorkbookSettings wbSettings = new WorkbookSettings();
 
         wbSettings.setLocale(new Locale("en", "EN"));
@@ -105,16 +111,24 @@ public class ReportGenerator {
     }
 
     private void addCaption(WritableSheet sheet, int column, int row, String s)
-            throws RowsExceededException, WriteException {
+            throws WriteException {
         Label label;
         label = new Label(column, row, s, timesBoldUnderline);
         sheet.addCell(label);
     }
 
     private void addLabel(WritableSheet sheet, int column, int row, String s)
-            throws WriteException, RowsExceededException {
+            throws WriteException {
         Label label;
         label = new Label(column, row, s, times);
         sheet.addCell(label);
+    }
+
+    public void setOutputFile(String outputFile) {
+        this.outputFile = outputFile;
+    }
+
+    public String getOutputFile() {
+        return outputFile;
     }
 }

@@ -1,12 +1,33 @@
 package utils;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.HashMap;
 
-import java.util.*;
+/**
+ * Implementation of the statement coverage. This class follows the singleton pattern.
+ * Its only instance will be shared among the smoke analysis code and instrumented code
+ * which will be executed from the domain of user's code.
+ *
+ * Created by Nima Dini | April 2015
+ */
 
 public class StatementCoverage {
+    /**
+     * the single instance of this class
+     */
     private static StatementCoverage sc = new StatementCoverage();
+
+    /**
+     * the set of all user's test cases, i.e., the test suite
+     */
     private final Set<TestCase> testCases;
+
+    /**
+     * the set of SUT methods covered by its corresponding test suite
+     */
     private final Set<Method> allCoveredMethods;
 
     private StatementCoverage() {
@@ -22,8 +43,9 @@ public class StatementCoverage {
 
     public boolean addBlockToCoveredSet(String testCaseLongName, String methodLongName, int blockIdx) {
         TestCase tc = getTestCaseByName(testCaseLongName);
-        if (tc == null)
+        if (tc == null) {
             return false;
+        }
 
         return tc.addCoveredBlock(new Method(methodLongName), blockIdx);
     }
@@ -84,6 +106,11 @@ public class StatementCoverage {
         return null;
     }
 
+    /**
+     * This generates the criteria matrix based on the gathered information
+     *
+     * @return              an analysis instance which can be processed by selection algorithm(s)
+     */
     public Analysis genMatrix() {
         int colDim = 0;
         Map<Method, Integer> methodToBlockOffset = new HashMap<Method, Integer>();
@@ -115,6 +142,25 @@ public class StatementCoverage {
 
         matrixPrettyPrint(mat, testCasesArray, methodToBlockOffset);
         return new Analysis(testCasesArray, mat);
+    }
+
+    /**
+     * whether the method of interest is being called from a test case
+     *
+     * @param e             The exception from the point of interest.
+     *                      -- should be generated in a method under test --
+     *
+     * @return              the testcase complete name if one exist or null otherwise
+     */
+    public static String getTestCaseCaller(Exception e) {
+        for (int i = e.getStackTrace().length - 1; i >= 0; i--) {
+            StackTraceElement st = e.getStackTrace()[i];
+            String callerName = st.getClassName() + '.' + st.getMethodName() + "()";
+            if (utils.StatementCoverage.getStatementCoverage().isTestCase(callerName)) {
+                return callerName;
+            }
+        }
+        return null;
     }
 
     public Analysis analyze() {

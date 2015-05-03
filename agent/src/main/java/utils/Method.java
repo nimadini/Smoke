@@ -1,7 +1,20 @@
 package utils;
 
+/**
+ * A method keeps required information for method under test.
+ *
+ * Created by Nima Dini | April 2015
+ */
+
 public final class Method {
+    /**
+     * the method long name, including the package prefix
+     */
     private String methodName;
+
+    /**
+     * total number of basic blocks in the method
+     */
     private int totalBlocks; // total number of basic blocks (from 0 to totalBlocks-1)
 
     public String getMethodName() {

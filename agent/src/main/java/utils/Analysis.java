@@ -1,9 +1,15 @@
 package utils;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-
 import java.util.HashSet;
 import java.util.Set;
+
+/**
+ * A higher level API for our analysis. It is used as the input for the analysis and
+ * as an adaptor for the report generator.
+ *
+ * Created by Nima Dini | April 2015
+ */
 
 public class Analysis {
     private TestCase[] testCases;

@@ -1,7 +1,6 @@
 package utils;
 
 import org.apache.commons.math3.linear.*;
-
 import java.util.*;
 
 /**
@@ -33,6 +32,7 @@ import java.util.*;
  * <p/>
  * Created by ChenguangLiu on 4/27/15.
  */
+
 public class TestSuiteCutter {
     static HashSet<Integer> repSet;
     public static int UNINITIALIZED = -99;
@@ -90,11 +90,8 @@ public class TestSuiteCutter {
                 reqVector = coverAndReduceTheRequirementVector(matrix.getRowVector(bestCoverageCase), reqVector);
             }
         }
-
         return repSet;
     }
-
-
 
     /**
      * Returns the maximum coverage of a given matrix
@@ -433,6 +430,4 @@ public class TestSuiteCutter {
         }
         return false;
     }
-
-
 }

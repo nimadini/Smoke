@@ -3,8 +3,7 @@ package agent;
 import javassist.*;
 import javassist.bytecode.*;
 import javassist.bytecode.analysis.ControlFlow;
-import javassist.compiler.CompileError;
-import javassist.compiler.Javac;
+import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import utils.StatementCoverage;
 import java.io.IOException;
@@ -15,7 +14,16 @@ import java.security.ProtectionDomain;
 import java.util.HashSet;
 import java.util.Set;
 
-public class JavaAssistTransformer implements ClassFileTransformer {
+/**
+ * A transformer which instruments java bytecode for solving regression test suite
+ * selection problem. Javassist framework is used to instrument the java bytecode.
+ * The instrumented code will be executed from the domain of user's program and
+ * help us with the analysis.
+ *
+ * Created by Nima Dini | April 2015
+ */
+
+public final class JavaAssistTransformer implements ClassFileTransformer {
     /**
      * logger object is used for logging especially to keep track of the error causes
      */
@@ -44,6 +52,7 @@ public class JavaAssistTransformer implements ClassFileTransformer {
     /**
      * This method detects whether a class has been instrumented before
      * @param className     The name of the loaded class
+     *
      * @return              true if the class has already been instrumented and false otherwise
      */
     private boolean isClassInSkippedSet(String className) {
@@ -65,8 +74,8 @@ public class JavaAssistTransformer implements ClassFileTransformer {
         // set the instrumentation object
         this.instrumentation = instrumentation;
 
-        // creates a ClassPool by searching the system search path, which
-        // includes the platform library, extension libraries, and CLASSPATH
+        /* creates a ClassPool by searching the system search path, which
+         * includes the platform library, extension libraries, and CLASSPATH */
         this.classPool = ClassPool.getDefault();
 
         // set the list of class prefixes to skip
@@ -80,40 +89,58 @@ public class JavaAssistTransformer implements ClassFileTransformer {
         this.classesToSkip.add("java.");
         this.classesToSkip.add("utils.");
         this.classesToSkip.add("jxl.");
+        this.classesToSkip.add("org.springframework.");
+        this.classesToSkip.add("org.xml.");
+        this.classesToSkip.add("org.w3c.");
+
+        BasicConfigurator.configure();
+        logger.info("Starting Analysis");
     }
 
+    /**
+     * This method instruments a test method to find the execution time
+     * @param m     The test method which is going to be instrumented
+     *
+     * @throws      CannotCompileException if it cannot instrument the method
+     */
     private void testMethodInstrumentation(CtMethod m) throws CannotCompileException {
         // add m to the list of test cases
         StatementCoverage.getStatementCoverage().addTestCase(m.getLongName());
 
         // instrument the test method to find its execution time
         m.addLocalVariable("elapsedTime", CtClass.longType);
-        m.insertBefore("elapsedTime = System.currentTimeMillis();");
-
+        m.insertBefore("elapsedTime = System.currentTimeMillis();"); // sys time at the beginning of method
         m.insertAfter("elapsedTime = System.currentTimeMillis() - elapsedTime;");
 
-        // store the execution time of test case in the data structure we have
+        // store the execution time of test case in the data structure
         m.insertAfter("utils.StatementCoverage.getStatementCoverage().getTestCaseByName(\"" + m.getLongName() + "\").setExecutionTime(elapsedTime);");
     }
 
-    private void methodUnderTestInstrumentation(CtClass cc, CtMethod m, Javac javac)
-            throws CannotCompileException, CompileError, BadBytecode {
+    /**
+     * This method instruments a method under test
+     * @param m     The method under test which is going to be instrumented
+     *
+     * @throws      CannotCompileException if it cannot instrument the method
+     * @throws      BadBytecode if it cannot create a CFG from the method
+     */
+    private void methodUnderTestInstrumentation(CtMethod m)
+            throws CannotCompileException, BadBytecode {
 
-        // if the caller is one of our test cases, add this method name to the map<testcase, methods>
-        // the goal is to keep track of which methods are being called in each testcase
+        /* if the caller is one of our test cases, add this method name to the map<testcase, methods>
+         * the goal is to keep track of which methods are being called in each testcase
+         * utils.StatementCoverage.getTestCaseCaller does so recursively */
         ControlFlow.Block[] blocks = new ControlFlow(m).basicBlocks();
         int blockSize = blocks.length;
         String code = "" +
-                "String callerTestCaseName = utils.Utility.getTestCaseCaller(new Exception());\n" +
+                "String callerTestCaseName = utils.StatementCoverage.getTestCaseCaller(new Exception());\n" +
                 "if (callerTestCaseName != null) {\n" +
                 "   utils.StatementCoverage.getStatementCoverage().setCurrentBlockMetaInfo(callerTestCaseName, \"" + m.getLongName() + "\"," + blockSize + ");\n" +
                 "}\n";
 
         m.insertBefore(code);
 
-        // add inst to beginning of each basic block
-        // for each test case find the blocks that are being executed!
-
+        /* add inst to beginning of each basic block
+         * for each test case find the blocks that are being executed! */
         for (int i = 0; i < blockSize; i++) {
             ControlFlow.Block blk = new ControlFlow(m).basicBlocks()[i];
             int pos = blk.position(); // bytecode line number
@@ -123,10 +150,8 @@ public class JavaAssistTransformer implements ClassFileTransformer {
 
     @Override
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
-        /*
-         * the className string contains slashes instead of periods for addressing a class
-         * replacing the slashes with dots makes the stack trace more human readable
-         */
+        /* the className string contains slashes instead of periods for addressing a class
+         * replacing the slashes with dots makes the stack trace more human readable */
         String dotEncodedClassName = className.replace('/', '.');
 
         if (!instrumentedClasses.add(dotEncodedClassName)) {
@@ -142,34 +167,43 @@ public class JavaAssistTransformer implements ClassFileTransformer {
             if (cc.isFrozen()) {
                 return null; // the class cannot be modified anymore
             }
-            Javac javac = new Javac(cc);
 
-            // for each method declared in the class itself -> not the inherited methods
-            // inherited methods would be instrumented in separately in their corresponding class
+            /* for each method declared in the class itself -> not the inherited methods
+             * inherited methods would be instrumented separately in their corresponding class */
             for (CtMethod m : cc.getDeclaredMethods()) {
-                if (m.getAnnotation(org.junit.Test.class) != null) { // if m is a test method
+                if (m.getAnnotation(org.junit.Test.class) != null) { // if m is a test method (if it has @Test annotation)
                     testMethodInstrumentation(m);
+                    logger.info("Test method instrumented: " + m.getLongName());
                 }
-                else { // if m is an actual method
-                    methodUnderTestInstrumentation(cc, m, javac);
+                else { // if m is a method under test
+                    methodUnderTestInstrumentation(m);
+                    logger.info("Method under test instrumented: " + m.getLongName());
                 }
             }
 
             byte[] byteCode = cc.toBytecode();
             cc.detach();
+            logger.info("Transformation Successful | " + cc.getName());
             return byteCode;
         }
-        catch(IOException | NotFoundException | CannotCompileException | CompileError e) {
+        catch(IOException | NotFoundException | CannotCompileException | BadBytecode | ClassNotFoundException e) {
             e.printStackTrace();
-            System.out.println("XEEEEEEEE");
             logger.error(e.getMessage() + "\ntransforming class: " + className + "; returning un-instrumented class", e);
         }
         catch(Exception e) {
             e.printStackTrace();
-            System.out.println("XEEEEEEEE2");
             logger.error("Unexpected error occurred: " + e.getMessage(), e);
         }
-
         return null;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int hashCode() {
+        throw new UnsupportedOperationException();
     }
 }
