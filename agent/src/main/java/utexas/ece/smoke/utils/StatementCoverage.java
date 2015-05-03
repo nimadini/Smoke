@@ -165,7 +165,7 @@ public class StatementCoverage {
 
     public Analysis analyze() {
         Analysis ar = genMatrix();
-        ar.setResult(TestSuiteCutter.findCoverWithHGS(ar.getMatrix()));
+        ar.setResult(TestSuiteCutter.findCoverWithGreedy(ar.getMatrix()));
         return ar;
     }
 

@@ -24,7 +24,6 @@ public class SLList {
 
         Node cur = header;
 
-        // skip up to idx
         for (int i = 0; i < idx; i++) {
             cur = cur.next;
             if (cur == null) {
@@ -57,6 +56,36 @@ public class SLList {
 
         return count;
     }
+
+    public String prettyList() {
+        String res = "";
+        Node cur = header.next;
+
+        while (cur != null) {
+            res = res + cur.elem + " ";
+            cur = cur.next;
+        }
+
+        return res;
+    }
+
+    public void reverse() {
+        Node cur = header.next;
+        Node prev = null;
+
+        while (cur != null) {
+            cur.prev = cur.next;
+            cur.next = prev;
+            prev = cur;
+            cur = cur.prev;
+        }
+
+        if (prev != null) {
+            prev.prev = this.header;
+        }
+
+        this.header.next = prev;
+    }
 }
 
 class Node {
@@ -68,7 +97,5 @@ class Node {
         this.elem = elem;
     }
 
-    public Node() {
-
-    }
+    public Node() {}
 }
