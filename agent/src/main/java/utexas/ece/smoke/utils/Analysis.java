@@ -1,4 +1,4 @@
-package utils;
+package utexas.ece.smoke.utils;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import java.util.HashSet;

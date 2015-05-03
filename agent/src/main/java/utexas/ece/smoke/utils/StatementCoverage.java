@@ -1,4 +1,4 @@
-package utils;
+package utexas.ece.smoke.utils;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import java.util.Set;
@@ -156,7 +156,7 @@ public class StatementCoverage {
         for (int i = e.getStackTrace().length - 1; i >= 0; i--) {
             StackTraceElement st = e.getStackTrace()[i];
             String callerName = st.getClassName() + '.' + st.getMethodName() + "()";
-            if (utils.StatementCoverage.getStatementCoverage().isTestCase(callerName)) {
+            if (utexas.ece.smoke.utils.StatementCoverage.getStatementCoverage().isTestCase(callerName)) {
                 return callerName;
             }
         }

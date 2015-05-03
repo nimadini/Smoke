@@ -1,4 +1,4 @@
-package utils;
+package utexas.ece.smoke.utils;
 
 /**
  * A method keeps required information for method under test.

@@ -1,4 +1,4 @@
-package utils;
+package utexas.ece.smoke.utils;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;

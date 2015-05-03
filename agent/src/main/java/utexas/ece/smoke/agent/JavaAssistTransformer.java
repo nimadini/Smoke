@@ -1,11 +1,11 @@
-package agent;
+package utexas.ece.smoke.agent;
 
 import javassist.*;
 import javassist.bytecode.*;
 import javassist.bytecode.analysis.ControlFlow;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
-import utils.StatementCoverage;
+import utexas.ece.smoke.utils.StatementCoverage;
 import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
@@ -87,7 +87,7 @@ public final class JavaAssistTransformer implements ClassFileTransformer {
         this.classesToSkip.add("junit.");
         this.classesToSkip.add("javax.");
         this.classesToSkip.add("java.");
-        this.classesToSkip.add("utils.");
+        this.classesToSkip.add("utexas.ece.smoke.utils.");
         this.classesToSkip.add("jxl.");
         this.classesToSkip.add("org.springframework.");
         this.classesToSkip.add("org.xml.");
@@ -113,7 +113,7 @@ public final class JavaAssistTransformer implements ClassFileTransformer {
         m.insertAfter("elapsedTime = System.currentTimeMillis() - elapsedTime;");
 
         // store the execution time of test case in the data structure
-        m.insertAfter("utils.StatementCoverage.getStatementCoverage().getTestCaseByName(\"" + m.getLongName() + "\").setExecutionTime(elapsedTime);");
+        m.insertAfter("utexas.ece.smoke.utils.StatementCoverage.getStatementCoverage().getTestCaseByName(\"" + m.getLongName() + "\").setExecutionTime(elapsedTime);");
     }
 
     /**
@@ -128,13 +128,13 @@ public final class JavaAssistTransformer implements ClassFileTransformer {
 
         /* if the caller is one of our test cases, add this method name to the map<testcase, methods>
          * the goal is to keep track of which methods are being called in each testcase
-         * utils.StatementCoverage.getTestCaseCaller does so recursively */
+         * utexas.ece.smoke.utils.StatementCoverage.getTestCaseCaller does so recursively */
         ControlFlow.Block[] blocks = new ControlFlow(m).basicBlocks();
         int blockSize = blocks.length;
         String code = "" +
-                "String callerTestCaseName = utils.StatementCoverage.getTestCaseCaller(new Exception());\n" +
+                "String callerTestCaseName = utexas.ece.smoke.utils.StatementCoverage.getTestCaseCaller(new Exception());\n" +
                 "if (callerTestCaseName != null) {\n" +
-                "   utils.StatementCoverage.getStatementCoverage().setCurrentBlockMetaInfo(callerTestCaseName, \"" + m.getLongName() + "\"," + blockSize + ");\n" +
+                "   utexas.ece.smoke.utils.StatementCoverage.getStatementCoverage().setCurrentBlockMetaInfo(callerTestCaseName, \"" + m.getLongName() + "\"," + blockSize + ");\n" +
                 "}\n";
 
         m.insertBefore(code);
@@ -144,7 +144,7 @@ public final class JavaAssistTransformer implements ClassFileTransformer {
         for (int i = 0; i < blockSize; i++) {
             ControlFlow.Block blk = new ControlFlow(m).basicBlocks()[i];
             int pos = blk.position(); // bytecode line number
-            m.insertAt(m.getMethodInfo().getLineNumber(pos), "utils.StatementCoverage.getStatementCoverage().addCurrentBlockMetaInfo(" + i + ");");
+            m.insertAt(m.getMethodInfo().getLineNumber(pos), "utexas.ece.smoke.utils.StatementCoverage.getStatementCoverage().addCurrentBlockMetaInfo(" + i + ");");
         }
     }
 

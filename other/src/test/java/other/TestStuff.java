@@ -1,5 +1,6 @@
+package other;
+
 import org.junit.Test;
-import other.Stuff;
 
 public class TestStuff {
     @Test

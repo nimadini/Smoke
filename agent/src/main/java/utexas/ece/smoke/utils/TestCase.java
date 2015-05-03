@@ -1,4 +1,4 @@
-package utils;
+package utexas.ece.smoke.utils;
 
 import java.util.HashMap;
 import java.util.HashSet;
