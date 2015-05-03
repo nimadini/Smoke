@@ -268,7 +268,8 @@ public class TestSuiteCutter {
 
                 /* mark Ti containing next_test*/
                 for(int i=0; i<matrix.getColumnDimension();i++){
-                    if (getTCListfromColumn(matrix,i).contains(next_test)){
+                    Set<Integer> tcs = getTCListfromColumn(matrix,i);
+                    if(tcs!=null&&tcs.contains(next_test)){
                         markedSet.add(i);
                         if (MAX_CARD == getCardinality(matrix,i)) may_reduce = true;
                     }
