@@ -4,6 +4,6 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
        <bean id="reportGenerator" class="utexas.ece.smoke.utils.ReportGenerator">
-              <property name="outputFile" value="/Users/ChenguangLiu/Documents/UTAustin/Courses/EE382V_SoftwareTesting/Project/genReports/report1.xls"/>
+              <property name="outputFile" value="/Users/stanley/Desktop/tmp/report.xls"/>
        </bean>
 </beans>

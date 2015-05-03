@@ -37,6 +37,10 @@ public class ReportGenerator {
 
     public void write() throws IOException, WriteException {
         File file = new File(outputFile);
+        if(!file.exists()) {
+            file.createNewFile();
+        }
+
         WorkbookSettings wbSettings = new WorkbookSettings();
 
         wbSettings.setLocale(new Locale("en", "EN"));
