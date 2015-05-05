@@ -17,3 +17,7 @@ Here is how I learned working with Javassist. The credit goes to: https://github
 The credit for using the MS Excel exporter goes to here: http://www.vogella.com/tutorials/JavaExcel/article.html
 
 Note: We have tested our approach on OSX Yosemite using Java 7.
+
+Here is the project repository: https://github.com/nimadini/Smoke.git
+
+Enjoy!
