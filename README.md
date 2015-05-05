@@ -13,4 +13,7 @@ Next run the mvn test/package on the other (user's) project to see how our tool
 works. The smoke code is well documented using Java doc.
 
 Here is how I learned working with Javassist. The credit goes to: https://github.com/tomsquest/java-agent-asm-javassist-sample
+
 The credit for using the MS Excel exporter goes to here: http://www.vogella.com/tutorials/JavaExcel/article.html
+
+Note: We have tested our approach on OSX Yosemite using Java 7.
